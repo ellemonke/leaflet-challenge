@@ -10,7 +10,29 @@ d3.json(earthquakesUrl, function(earthquakeData) {
     // Create layer with earthquake markers
     var earthquakes = L.layerGroup(earthquakeMarkers);
 
+    // Legend placement
+    var legend = L.control({ position: "bottomright" });
 
+    // Create legend
+    legend.onAdd = function() {
+        var div = L.DomUtil.create("div", "legend");
+
+        // Append unordered list
+        var ul = L.DomUtil.create("ul", "", div);
+
+        // Magnitude labels
+        var labels = ["0-1", "1-2", "2-3", "3-4", "4-5", "5+"];
+
+        // For each label, append list item with color and label text
+        for (var i=0; i < labels.length; i++) {
+            var li = L.DomUtil.create("li", "", ul);
+            li.innerHTML = "<div class='square' style='background-color:" + markerColor(i) + "'></div>" + labels[i];
+        };
+
+        return div;
+    };
+
+    
     // Load fault lines data
     d3.json(faultLinesUrl, function(faultLinesData) {
 
@@ -55,6 +77,8 @@ d3.json(earthquakesUrl, function(earthquakeData) {
             zoom: 3,
             layers: [defaultMap, earthquakes, faultLines]
         });    
+
+        legend.addTo(myMap);
 
         // Layer control
         L.control.layers(baseMaps, overlayMaps, {
@@ -117,15 +141,14 @@ function createMarkers(features) {
         );
     }
 
-    // var legend = createLegend(earthquakes);
-
+    // var legend = createLegend();
     // earthquakes.addLayer(legend);
-
+    
     return earthquakeMarkers;
 }
 
 // Create Legend
-function createLegend(earthquakes) {
+function createLegend() {
     // Legend placement
     var legend = L.control({ position: "bottomright" });
 
