@@ -1,63 +1,71 @@
-// Outdoors map (default)
-var defaultMap = L.tileLayer(MAPBOX_URL, {
-    attribution: ATTRIBUTION,
-    maxZoom: 18,
-    id: "mapbox/outdoors-v11",
-    accessToken: API_KEY
-});
-
-// Satellite map
-var satelliteMap = L.tileLayer(MAPBOX_URL, {
-    attribution: ATTRIBUTION,
-    maxZoom: 18,
-    id: "mapbox/satellite-streets-v11",
-    accessToken: API_KEY
-});
-
-// All base maps
-var baseMaps = {
-    "Outdoors": defaultMap,
-    "Satellite": satelliteMap
-};
-
-// Initialize overlay layers to be filled later
-var layers = {
-    EARTHQUAKES: new L.layerGroup(),
-    FAULT_LINES: new L.layerGroup()    
-};
-
-// All overlay maps to be added to the layer control
-var overlayMaps = {
-    "Earthquakes": layers.EARTHQUAKES,
-    "Fault Lines": layers.FAULT_LINES,    
-};
-
-// Create map with initial layers
-var myMap = L.map("map", {
-    center: [40, -110],
-    zoom: 3,
-    layers: [defaultMap, layers.EARTHQUAKES, layers.FAULT_LINES]
-});
-
-
 // GeoJSON links
 var earthquakesUrl = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
 var faultLinesUrl = "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json";
 
 // Load earthquake data
 d3.json(earthquakesUrl, function(earthquakeData) {
-    // Create overlay earthquake markers
-    createMarkers(earthquakeData.features);
+
+    // Create earthquake markers
+    var earthquakeMarkers = createMarkers(earthquakeData.features);
+    // Create layer with earthquake markers
+    var earthquakes = L.layerGroup(earthquakeMarkers);
+
 
     // Load fault lines data
     d3.json(faultLinesUrl, function(faultLinesData) {
-        // Create overlay fault lines
-        createLines(faultLinesData.features);
+
+        // Create fault lines
+        var polyLines = createLines(faultLinesData.features);
+        // Create layer with fault lines
+        var faultLines = L.layerGroup(polyLines);
+
+
+        /* Create maps */
+        // Outdoors map (default)
+        var defaultMap = L.tileLayer(MAPBOX_URL, {
+            attribution: ATTRIBUTION,
+            maxZoom: 18,
+            id: "mapbox/outdoors-v11",
+            accessToken: API_KEY
+        });
+
+        // Satellite map
+        var satelliteMap = L.tileLayer(MAPBOX_URL, {
+            attribution: ATTRIBUTION,
+            maxZoom: 18,
+            id: "mapbox/satellite-streets-v11",
+            accessToken: API_KEY
+        });
+
+        // All base maps
+        var baseMaps = {
+            "Outdoors": defaultMap,
+            "Satellite": satelliteMap
+        };
+
+        // All overlay maps
+        var overlayMaps = {
+            "Earthquakes": earthquakes,
+            "Fault Lines": faultLines,    
+        };
+
+        // Create map with initial layers
+        var myMap = L.map("map", {
+            center: [40, -110],
+            zoom: 3,
+            layers: [defaultMap, earthquakes, faultLines]
+        });    
+
+        // Layer control
+        L.control.layers(baseMaps, overlayMaps, {
+            collapsed: false
+        }).addTo(myMap);
+
     });
 });
 
 
-/* Functions for Earthquakes Layer */
+/* Earthquakes Functions */
 
 // Prep marker size
 function markerSize(magnitude) {
@@ -82,7 +90,7 @@ function markerColor(magnitude) {
     return fillColor;
 }
 
-// Create Earthquake Markers
+// Create earthquake markers
 function createMarkers(features) {
 
     // Initialize empty markers array
@@ -107,15 +115,13 @@ function createMarkers(features) {
             // Bind a popup
             .bindPopup(features[i].properties.place + "<br>Magnitude: " + features[i].properties.mag)
         );
-
-        // Create layer with markers array
-        var earthquakes = L.layerGroup(earthquakeMarkers);
-
-        // Add to Map
-        // earthquakes.addTo(myMap);
     }
 
-    createLegend(earthquakes);
+    // var legend = createLegend(earthquakes);
+
+    // earthquakes.addLayer(legend);
+
+    return earthquakeMarkers;
 }
 
 // Create Legend
@@ -142,13 +148,11 @@ function createLegend(earthquakes) {
         return div;
     };
 
-    // Add to Map
-    legend.addTo(myMap);
-    earthquakes.addTo(myMap);
+    return legend;
 }
 
 
-/* Functions for Fault Lines Layer */
+/* Fault Lines Functions */
 
 // Create fault lines
 function createLines(features) {
@@ -179,15 +183,5 @@ function createLines(features) {
         );
     }
 
-    // Create layer with lines array
-    var faultLines = L.layerGroup(polyLines);
-
-    // Add to Map
-    faultLines.addTo(myMap);
+    return polyLines;
 }
-
-
-// Layer control
-L.control.layers(baseMaps, overlayMaps, {
-    collapsed: false
-}).addTo(myMap);
