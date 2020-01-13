@@ -10,29 +10,7 @@ d3.json(earthquakesUrl, function(earthquakeData) {
     // Create layer with earthquake markers
     var earthquakes = L.layerGroup(earthquakeMarkers);
 
-    // Legend placement
-    var legend = L.control({ position: "bottomright" });
 
-    // Create legend
-    legend.onAdd = function() {
-        var div = L.DomUtil.create("div", "legend");
-
-        // Append unordered list
-        var ul = L.DomUtil.create("ul", "", div);
-
-        // Magnitude labels
-        var labels = ["0-1", "1-2", "2-3", "3-4", "4-5", "5+"];
-
-        // For each label, append list item with color and label text
-        for (var i=0; i < labels.length; i++) {
-            var li = L.DomUtil.create("li", "", ul);
-            li.innerHTML = "<div class='square' style='background-color:" + markerColor(i) + "'></div>" + labels[i];
-        };
-
-        return div;
-    };
-
-    
     // Load fault lines data
     d3.json(faultLinesUrl, function(faultLinesData) {
 
@@ -78,7 +56,45 @@ d3.json(earthquakesUrl, function(earthquakeData) {
             layers: [defaultMap, earthquakes, faultLines]
         });    
 
+
+        // Legend placement
+        var legend = L.control({ position: "bottomright" });
+
+        // Create legend
+        legend.onAdd = function(map) {
+            var div = L.DomUtil.create("div", "legend");
+
+            // Append unordered list
+            var ul = L.DomUtil.create("ul", "", div);
+
+            // Magnitude labels
+            var labels = ["0-1", "1-2", "2-3", "3-4", "4-5", "5+"];
+
+            // For each label, append list item with color and label text
+            for (var i=0; i < labels.length; i++) {
+                var li = L.DomUtil.create("li", "", ul);
+                li.innerHTML = "<div class='square' style='background-color:" + markerColor(i) + "'></div>" + labels[i];
+            };
+
+            return div;
+        };
+
+        // Add to map
         legend.addTo(myMap);
+
+        // If layer removed is 'Earthquakes' remove legend too
+        myMap.on('overlayremove', function (eventLayer) {
+            if (eventLayer.name === 'Earthquakes') {
+                this.removeControl(legend);
+            } 
+        });
+
+        // If layer added is 'Earthquakes' add legend too
+        myMap.on('overlayadd', function (eventLayer) {
+            if (eventLayer.name === 'Earthquakes') {
+                legend.addTo(this);
+            } 
+        });
 
         // Layer control
         L.control.layers(baseMaps, overlayMaps, {
