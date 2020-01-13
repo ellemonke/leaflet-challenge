@@ -35,14 +35,9 @@ var overlayMaps = {
 // Create map with initial layers
 var myMap = L.map("map", {
     center: [40, -110],
-    zoom: 4.5,
+    zoom: 3,
     layers: [defaultMap, layers.EARTHQUAKES, layers.FAULT_LINES]
 });
-
-// Layer control
-L.control.layers(baseMaps, overlayMaps, {
-    collapsed: false
-}).addTo(myMap);
 
 
 // GeoJSON links
@@ -51,13 +46,14 @@ var faultLinesUrl = "https://raw.githubusercontent.com/fraxen/tectonicplates/mas
 
 // Load earthquake data
 d3.json(earthquakesUrl, function(earthquakeData) {
+    // Create overlay earthquake markers
+    createMarkers(earthquakeData.features);
 
     // Load fault lines data
     d3.json(faultLinesUrl, function(faultLinesData) {
-        console.log(faultLinesData.features);
+        // Create overlay fault lines
+        createLines(faultLinesData.features);
     });
-
-    createMarkers(earthquakeData.features);
 });
 
 
@@ -86,35 +82,44 @@ function markerColor(magnitude) {
     return fillColor;
 }
 
-// Create Markers
-function createMarkers(response) {
+// Create Earthquake Markers
+function createMarkers(features) {
 
+    // Initialize empty markers array
+    var earthquakeMarkers = [];
+    
     // For each feature
-    for (var i=0; i < response.length; i++) {
+    for (var i=0; i < features.length; i++) {
 
         // Find coordinates
-        var latlong = [response[i].geometry.coordinates[1], response[i].geometry.coordinates[0]];
+        var latlong = [features[i].geometry.coordinates[1], features[i].geometry.coordinates[0]];
 
-        // Add a circle marker
-        L.circle(latlong, {
-            radius: markerSize(response[i].properties.mag),
-            fillColor: markerColor(response[i].properties.mag),
-            fillOpacity: 1,
-            color: 'black',
-            weight: 0.5
+        // Add circle marker to markers array
+        earthquakeMarkers.push(
+            L.circle(latlong, {
+                radius: markerSize(features[i].properties.mag),
+                fillColor: markerColor(features[i].properties.mag),
+                fillOpacity: 1,
+                color: 'black',
+                weight: 0.5
 
-        // Bind a popup
-        }).bindPopup(response[i].properties.place + "<br>Magnitude: " + response[i].properties.mag)
+            })
+            // Bind a popup
+            .bindPopup(features[i].properties.place + "<br>Magnitude: " + features[i].properties.mag)
+        );
+
+        // Create layer with markers array
+        var earthquakes = L.layerGroup(earthquakeMarkers);
 
         // Add to Map
-        .addTo(myMap);
+        // earthquakes.addTo(myMap);
     }
 
-    createLegend();
+    createLegend(earthquakes);
 }
 
 // Create Legend
-function createLegend() {
+function createLegend(earthquakes) {
     // Legend placement
     var legend = L.control({ position: "bottomright" });
 
@@ -139,4 +144,50 @@ function createLegend() {
 
     // Add to Map
     legend.addTo(myMap);
+    earthquakes.addTo(myMap);
 }
+
+
+/* Functions for Fault Lines Layer */
+
+// Create fault lines
+function createLines(features) {
+
+    // Initialize empty lines array
+    var polyLines = [];
+
+    // For each feature
+    for (var i=0; i < features.length; i++) {
+
+        // Find coordinates
+        var reversed = features[i].geometry.coordinates[0];
+
+        // Put them in correct order
+        var lines = [];
+        for (var j=0; j < reversed.length; j++) {
+            var coordinate = [reversed[j][1], reversed[j][0]];
+            lines.push(coordinate);
+        }
+
+        // Add line coordinates to array
+        polyLines.push(
+            L.polyline(lines, { 
+                color: "orange",
+                stroke: true,
+                weight: 3 
+            })
+        );
+    }
+
+    // Create layer with lines array
+    var faultLines = L.layerGroup(polyLines);
+
+    // Add to Map
+    faultLines.addTo(myMap);
+}
+
+
+// Layer control
+L.control.layers(baseMaps, overlayMaps, {
+    collapsed: false
+}).addTo(myMap);
