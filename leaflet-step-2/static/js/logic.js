@@ -21,7 +21,7 @@ d3.json(earthquakesUrl, function(earthquakeData) {
 
 
         /* Create maps */
-        // Outdoors map (default)
+        // Default map (outdoors)
         var defaultMap = L.tileLayer(MAPBOX_URL, {
             attribution: ATTRIBUTION,
             maxZoom: 18,
@@ -57,11 +57,12 @@ d3.json(earthquakesUrl, function(earthquakeData) {
         });    
 
 
+        /* Create legend */
         // Legend placement
         var legend = L.control({ position: "bottomright" });
 
         // Create legend
-        legend.onAdd = function(map) {
+        legend.onAdd = function() {
             var div = L.DomUtil.create("div", "legend");
 
             // Append unordered list
@@ -79,8 +80,15 @@ d3.json(earthquakesUrl, function(earthquakeData) {
             return div;
         };
 
-        // Add to map
+        // Add legend to map
         legend.addTo(myMap);
+
+
+        // Layer control
+        L.control.layers(baseMaps, overlayMaps, {
+            collapsed: false
+        }).addTo(myMap);
+
 
         // If layer removed is 'Earthquakes' remove legend too
         myMap.on('overlayremove', function (eventLayer) {
@@ -95,11 +103,6 @@ d3.json(earthquakesUrl, function(earthquakeData) {
                 legend.addTo(this);
             } 
         });
-
-        // Layer control
-        L.control.layers(baseMaps, overlayMaps, {
-            collapsed: false
-        }).addTo(myMap);
 
     });
 });
@@ -156,38 +159,8 @@ function createMarkers(features) {
             .bindPopup(features[i].properties.place + "<br>Magnitude: " + features[i].properties.mag)
         );
     }
-
-    // var legend = createLegend();
-    // earthquakes.addLayer(legend);
     
     return earthquakeMarkers;
-}
-
-// Create Legend
-function createLegend() {
-    // Legend placement
-    var legend = L.control({ position: "bottomright" });
-
-    // Create legend
-    legend.onAdd = function() {
-        var div = L.DomUtil.create("div", "legend");
-
-        // Append unordered list
-        var ul = L.DomUtil.create("ul", "", div);
-
-        // Magnitude labels
-        var labels = ["0-1", "1-2", "2-3", "3-4", "4-5", "5+"];
-
-        // For each label, append list item with color and label text
-        for (var i=0; i < labels.length; i++) {
-            var li = L.DomUtil.create("li", "", ul);
-            li.innerHTML = "<div class='square' style='background-color:" + markerColor(i) + "'></div>" + labels[i];
-        };
-
-        return div;
-    };
-
-    return legend;
 }
 
 
